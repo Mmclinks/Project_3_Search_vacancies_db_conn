@@ -1,9 +1,9 @@
+import configparser
 from typing import Any, Dict, List
 
-from api_handler import fetch_companies, fetch_vacancies
-from db_manager import DBManager
-from file_handler import create_database, create_tables
-import configparser
+from src.api_handler import fetch_companies, fetch_vacancies
+from src.db_manager import DBManager
+from src.file_handler import create_database, create_tables
 
 
 def populate_db(db_manager: DBManager) -> None:
@@ -24,11 +24,10 @@ def populate_db(db_manager: DBManager) -> None:
     load_data_to_db(db_manager, companies_data, vacancies_data)
 
 
-
 def load_data_to_db(
-        db_manager: DBManager,
-        companies_data: List[Dict[str, Any]],
-        vacancies_data: Dict[int, List[Dict[str, Any]]],
+    db_manager: DBManager,
+    companies_data: List[Dict[str, Any]],
+    vacancies_data: Dict[int, List[Dict[str, Any]]],
 ) -> None:
     """
     Загружает данные о компаниях и вакансиях в базу данных.
@@ -44,11 +43,15 @@ def load_data_to_db(
 
     for company_id, vacancies in vacancies_data.items():
         for vacancy in vacancies:
-            title = vacancy.get("name")
+            title = vacancy.get("name", "")  # Используйте пустую строку по умолчанию
             salary_min = vacancy.get("salary", {}).get("from")
             salary_max = vacancy.get("salary", {}).get("to")
-            salary_currency = vacancy.get("salary", {}).get("currency")
-            url = vacancy.get("alternate_url")
+            salary_currency = vacancy.get("salary", {}).get(
+                "currency", ""
+            )  # Используйте пустую строку по умолчанию
+            url = vacancy.get(
+                "alternate_url", ""
+            )  # Используйте пустую строку по умолчанию
             db_manager.insert_vacancy(
                 company_id, title, salary_min, salary_max, salary_currency, url
             )
@@ -83,13 +86,15 @@ def get_db_config() -> dict:
     :return: словарь с параметрами подключения
     """
     config = configparser.ConfigParser()
-    config.read('/home/alex/new_pycharm_githab/Project_3_Search_vacancies_db_conn/config.ini')
+    config.read(
+        "/home/alex/new_pycharm_githab/Project_3_Search_vacancies_db_conn/config.ini"
+    )
 
     db_config = {
-        'dbname': config.get('database', 'dbname'),
-        'user': config.get('database', 'user'),
-        'password': config.get('database', 'password'),
-        'host': config.get('database', 'host')
+        "dbname": config.get("database", "dbname"),
+        "user": config.get("database", "user"),
+        "password": config.get("database", "password"),
+        "host": config.get("database", "host"),
     }
 
     return db_config
@@ -103,8 +108,8 @@ def main() -> None:
     db_config = get_db_config()
 
     # Создание базы данных и таблиц
-    create_database(db_config['dbname'], db_config['user'], db_config['password'])
-    create_tables(db_config['dbname'], db_config['user'], db_config['password'])
+    create_database(db_config["dbname"], db_config["user"], db_config["password"])
+    create_tables(db_config["dbname"], db_config["user"], db_config["password"])
 
     # Подключение к базе данных
     db_manager = DBManager(**db_config)

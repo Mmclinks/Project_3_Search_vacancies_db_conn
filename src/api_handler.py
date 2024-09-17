@@ -1,5 +1,4 @@
 from typing import Any, Dict, List, Optional
-
 import requests
 
 
@@ -22,7 +21,16 @@ def fetch_companies(
     """
     response = requests.get(api_url, params=params)
     if response.status_code == 200:
-        return response.json().get("items", [])
+        response_data = response.json()
+        # Убедитесь, что response_data является словарём и содержит ключ 'items'
+        if isinstance(response_data, dict) and "items" in response_data:
+            items = response_data["items"]
+            if isinstance(items, list) and all(isinstance(i, dict) for i in items):
+                return items
+            else:
+                return []
+        else:
+            return []
     else:
         raise Exception(f"Ошибка при получении компаний: {response.status_code}")
 
@@ -44,6 +52,15 @@ def fetch_vacancies(company_id: int, api_url: str) -> List[Dict[str, Any]]:
     """
     response = requests.get(f"{api_url}?employer_id={company_id}")
     if response.status_code == 200:
-        return response.json().get("items", [])
+        response_data = response.json()
+        # Убедитесь, что response_data является словарём и содержит ключ 'items'
+        if isinstance(response_data, dict) and "items" in response_data:
+            items = response_data["items"]
+            if isinstance(items, list) and all(isinstance(i, dict) for i in items):
+                return items
+            else:
+                return []
+        else:
+            return []
     else:
         raise Exception(f"Ошибка при получении вакансий: {response.status_code}")

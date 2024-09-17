@@ -1,18 +1,32 @@
-from typing import List, Optional, Tuple, Any
+from typing import Any, List, Optional, Tuple
 
 import psycopg2
 
 
 class DBManager:
     def __init__(self, dbname: str, user: str, password: str, host: str = "localhost"):
+        """
+        Инициализирует соединение с базой данных и создает курсор.
+
+        :param dbname: Имя базы данных.
+        :param user: Имя пользователя для подключения.
+        :param password: Пароль пользователя.
+        :param host: Хост базы данных (по умолчанию "localhost").
+        """
         self.conn = psycopg2.connect(
             dbname=dbname, user=user, password=password, host=host
         )
         self.cursor = self.conn.cursor()
 
     def insert_company(self, company_id: int, company_name: str) -> None:
+        """
+        Вставляет новую компанию в базу данных, если она еще не существует.
+
+        :param company_id: Уникальный идентификатор компании.
+        :param company_name: Название компании.
+        """
         query = """
-        INSERT INTO companies (hh_id, name) 
+        INSERT INTO companies (hh_id, name)
         VALUES (%s, %s)
         ON CONFLICT (hh_id) DO NOTHING;
         """
@@ -20,16 +34,16 @@ class DBManager:
         self.conn.commit()
 
     def insert_vacancy(
-            self,
-            company_id: int,
-            title: str,
-            salary_min: Optional[int],
-            salary_max: Optional[int],
-            salary_currency: str,
-            url: str,
+        self,
+        company_id: int,
+        title: str,
+        salary_min: Optional[int],
+        salary_max: Optional[int],
+        salary_currency: str,
+        url: str,
     ) -> None:
         """
-        Вставляет новую вакансию в базу данных, если она ещё не существует.
+        Вставляет новую вакансию в базу данных, если она еще не существует.
 
         :param company_id: Уникальный идентификатор компании.
         :param title: Название вакансии.
@@ -51,13 +65,24 @@ class DBManager:
         ON CONFLICT (url) DO NOTHING;
         """
         print(
-            f"Inserting vacancy: company_id={company_id}, title={title}, salary_min={salary_min}, salary_max={salary_max}, salary_currency={salary_currency}, url={url}")
+            f"Inserting vacancy: company_id={company_id}, "
+            f"title={title}, "
+            f"salary_min={salary_min}, "
+            f"salary_max={salary_max}, "
+            f"salary_currency={salary_currency}, "
+            f"url={url}"
+        )
         self.cursor.execute(
             query, (company[0], title, salary_min, salary_max, salary_currency, url)
         )
         self.conn.commit()
 
     def get_companies_and_vacancies_count(self) -> list[tuple[Any, ...]]:
+        """
+        Получает список компаний и количество вакансий в каждой компании.
+
+        :return: Список кортежей, где каждый кортеж содержит название компании и количество вакансий.
+        """
         query = """
             SELECT c.name, COUNT(v.id) AS vacancy_count
             FROM companies c
@@ -72,6 +97,12 @@ class DBManager:
     def get_all_vacancies(
         self,
     ) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+        """
+        Получает список всех вакансий.
+
+        :return: Список кортежей, где каждый кортеж содержит название компании, название вакансии, минимальную и
+        максимальную зарплату, и URL вакансии.
+        """
         query = """
             SELECT c.name AS company_name, v.title, v.salary_min, v.salary_max, v.url
             FROM vacancies v
@@ -99,6 +130,12 @@ class DBManager:
     def get_vacancies_with_higher_salary(
         self,
     ) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+        """
+        Получает список вакансий, где средняя зарплата выше средней по всем вакансиям.
+
+        :return: Список кортежей, где каждый кортеж содержит название компании,
+        название вакансии, минимальную и максимальную зарплату, и URL вакансии.
+        """
         avg_salary = self.get_avg_salary()
         if avg_salary is None:
             return []
@@ -116,6 +153,13 @@ class DBManager:
     def get_vacancies_with_keyword(
         self, keyword: str
     ) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+        """
+        Получает список вакансий, содержащих указанное ключевое слово в названии.
+
+        :param keyword: Ключевое слово для поиска в названии вакансии.
+        :return: Список кортежей, где каждый кортеж содержит название компании,
+        название вакансии, минимальную и максимальную зарплату, и URL вакансии.
+        """
         query = """
             SELECT c.name AS company_name, v.title, v.salary_min, v.salary_max, v.url
             FROM vacancies v
