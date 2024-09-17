@@ -5,50 +5,31 @@ import psycopg2
 
 class DBManager:
     def __init__(self, dbname: str, user: str, password: str, host: str = "localhost"):
-        """
-        Инициализирует DBManager с параметрами подключения к базе данных.
-
-        :param dbname: Имя базы данных.
-        :param user: Имя пользователя для базы данных.
-        :param password: Пароль для базы данных.
-        :param host: Хост, на котором работает сервер базы данных (по умолчанию 'localhost').
-        """
         self.conn = psycopg2.connect(
             dbname=dbname, user=user, password=password, host=host
         )
         self.cursor = self.conn.cursor()
 
     def insert_company(self, company_id: int, company_name: str) -> None:
-        """
-        Вставляет новую компанию в базу данных, если она ещё не существует.
-
-        :param company_id: Уникальный идентификатор компании.
-        :param company_name: Название компании.
-        """
-        # Проверка существования компании
-        self.cursor.execute("SELECT 1 FROM companies WHERE hh_id = %s;", (company_id,))
-        if self.cursor.fetchone():
-            print(f"Компания с hh_id={company_id} уже существует.")
-            return
-
         query = """
         INSERT INTO companies (hh_id, name) 
-        VALUES (%s, %s);
+        VALUES (%s, %s)
+        ON CONFLICT (hh_id) DO NOTHING;
         """
         self.cursor.execute(query, (company_id, company_name))
         self.conn.commit()
 
     def insert_vacancy(
-        self,
-        company_id: int,
-        title: str,
-        salary_min: Optional[int],
-        salary_max: Optional[int],
-        salary_currency: str,
-        url: str,
+            self,
+            company_id: int,
+            title: str,
+            salary_min: Optional[int],
+            salary_max: Optional[int],
+            salary_currency: str,
+            url: str,
     ) -> None:
         """
-        Вставляет новую вакансию в базу данных.
+        Вставляет новую вакансию в базу данных, если она ещё не существует.
 
         :param company_id: Уникальный идентификатор компании.
         :param title: Название вакансии.
@@ -58,17 +39,21 @@ class DBManager:
         :param url: URL вакансии.
         """
         # Проверка существования компании
-        self.cursor.execute("SELECT id FROM companies WHERE id = %s;", (company_id,))
-        if self.cursor.fetchone() is None:
+        self.cursor.execute("SELECT id FROM companies WHERE hh_id = %s;", (company_id,))
+        company = self.cursor.fetchone()
+        if company is None:
             print(f"Компания с ID {company_id} не существует. Пропускаем вакансию.")
             return
 
         query = """
         INSERT INTO vacancies (company_id, title, salary_min, salary_max, salary_currency, url)
-        VALUES (%s, %s, %s, %s, %s, %s);
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON CONFLICT (url) DO NOTHING;
         """
+        print(
+            f"Inserting vacancy: company_id={company_id}, title={title}, salary_min={salary_min}, salary_max={salary_max}, salary_currency={salary_currency}, url={url}")
         self.cursor.execute(
-            query, (company_id, title, salary_min, salary_max, salary_currency, url)
+            query, (company[0], title, salary_min, salary_max, salary_currency, url)
         )
         self.conn.commit()
 

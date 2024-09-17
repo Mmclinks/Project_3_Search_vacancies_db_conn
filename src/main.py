@@ -3,24 +3,16 @@ from typing import Any, Dict, List
 from api_handler import fetch_companies, fetch_vacancies
 from db_manager import DBManager
 from file_handler import create_database, create_tables
+import configparser
 
 
 def populate_db(db_manager: DBManager) -> None:
-    """
-    Заполняет базу данных данными о компаниях и вакансиях.
-
-    :param db_manager: Экземпляр класса DBManager для взаимодействия с базой данных.
-    """
-    # URL для получения данных о работодателях
     companies_url = "https://api.hh.ru/employers"
     vacancies_url = "https://api.hh.ru/vacancies"
 
-    # Получение данных о работодателях
     companies_data: List[Dict[str, Any]] = fetch_companies(
         companies_url, params={"per_page": 10}
     )
-
-    # Подготовка словаря для хранения вакансий
     vacancies_data: Dict[int, List[Dict[str, Any]]] = {}
 
     for company in companies_data:
@@ -29,14 +21,14 @@ def populate_db(db_manager: DBManager) -> None:
         vacancies: List[Dict[str, Any]] = fetch_vacancies(company_id, vacancies_url)
         vacancies_data[company_id] = vacancies
 
-    # Заполнение базы данных
     load_data_to_db(db_manager, companies_data, vacancies_data)
 
 
+
 def load_data_to_db(
-    db_manager: DBManager,
-    companies_data: List[Dict[str, Any]],
-    vacancies_data: Dict[int, List[Dict[str, Any]]],
+        db_manager: DBManager,
+        companies_data: List[Dict[str, Any]],
+        vacancies_data: Dict[int, List[Dict[str, Any]]],
 ) -> None:
     """
     Загружает данные о компаниях и вакансиях в базу данных.
@@ -85,19 +77,37 @@ def user_interface(db_manager: DBManager) -> None:
     print(db_manager.get_vacancies_with_keyword(keyword))
 
 
+def get_db_config() -> dict:
+    """
+    Получает параметры подключения к базе данных из файла config.ini
+    :return: словарь с параметрами подключения
+    """
+    config = configparser.ConfigParser()
+    config.read('/home/alex/new_pycharm_githab/Project_3_Search_vacancies_db_conn/config.ini')
+
+    db_config = {
+        'dbname': config.get('database', 'dbname'),
+        'user': config.get('database', 'user'),
+        'password': config.get('database', 'password'),
+        'host': config.get('database', 'host')
+    }
+
+    return db_config
+
+
 def main() -> None:
     """
     Основная функция, которая создаёт базу данных, заполняет её данными и отображает информацию.
     """
-    dbname = "postgres"
-    user = "postgres"
-    password = "4Ka7dGnm"
+    # Получение данных из конфигурационного файла
+    db_config = get_db_config()
 
     # Создание базы данных и таблиц
-    create_database(dbname, user, password)
-    create_tables(dbname, user, password)
+    create_database(db_config['dbname'], db_config['user'], db_config['password'])
+    create_tables(db_config['dbname'], db_config['user'], db_config['password'])
 
-    db_manager = DBManager(dbname=dbname, user=user, password=password)
+    # Подключение к базе данных
+    db_manager = DBManager(**db_config)
 
     try:
         populate_db(db_manager)
