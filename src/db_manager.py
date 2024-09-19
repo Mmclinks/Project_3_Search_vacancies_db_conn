@@ -18,9 +18,9 @@ class DBManager:
         )
         self.cursor = self.conn.cursor()
 
-    def insert_company(self, company_id: int, company_name: str) -> None:
+    def insert_or_update_company(self, company_id: int, company_name: str) -> None:
         """
-        Вставляет новую компанию в базу данных, если она еще не существует.
+        Вставляет новую компанию или обновляет существующую, если такая уже есть.
 
         :param company_id: Уникальный идентификатор компании.
         :param company_name: Название компании.
@@ -28,7 +28,8 @@ class DBManager:
         query = """
         INSERT INTO companies (hh_id, name)
         VALUES (%s, %s)
-        ON CONFLICT (hh_id) DO NOTHING;
+        ON CONFLICT (hh_id) DO UPDATE
+        SET name = EXCLUDED.name;
         """
         self.cursor.execute(query, (company_id, company_name))
         self.conn.commit()

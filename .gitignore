@@ -163,4 +163,4 @@ cython_debug/
 
 .venv/
 
-config.ini
+src/config.ini

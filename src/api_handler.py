@@ -3,7 +3,9 @@ from typing import Any, Dict, List, Optional
 import requests
 
 
-def fetch_data_from_api(api_url: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def fetch_data_from_api(
+    api_url: str, params: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Делает HTTP-запрос к API и возвращает данные в виде словаря, если запрос успешен.
 
@@ -45,7 +47,9 @@ def extract_items(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return []
 
 
-def fetch_companies(api_url: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def fetch_companies(
+    api_url: str, params: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """
     Получает список компаний с указанного URL API.
 

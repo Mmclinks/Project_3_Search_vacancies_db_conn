@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import Any, Dict, List
 
 from src.api_handler import fetch_companies, fetch_vacancies
@@ -8,22 +9,22 @@ from src.file_handler import create_database, create_tables
 
 def populate_db(db_manager: DBManager) -> None:
     """
-        Загружает данные о компаниях и вакансиях с API hh.ru и сохраняет их в базу данных.
+    Загружает данные о компаниях и вакансиях с API hh.ru и сохраняет их в базу данных.
 
-        Аргументы:
-            db_manager (DBManager): Экземпляр класса для управления базой данных.
+    Аргументы:
+        db_manager (DBManager): Экземпляр класса для управления базой данных.
 
-        Описание:
-            1. Извлекает данные о компаниях с API hh.ru с помощью функции `fetch_companies`,
-            ограничивая результат 10 компаниями.
-            2. Для каждой компании запрашивает список вакансий, связанных с ней, с помощью функции `fetch_vacancies`.
-            3. Все вакансии группируются по ID компании и сохраняются в словаре `vacancies_data`.
-            4. Затем данные о компаниях и их вакансиях передаются в функцию `load_data_to_db`,
-            которая сохраняет их в базе данных.
+    Описание:
+        1. Извлекает данные о компаниях с API hh.ru с помощью функции `fetch_companies`,
+        ограничивая результат 10 компаниями.
+        2. Для каждой компании запрашивает список вакансий, связанных с ней, с помощью функции `fetch_vacancies`.
+        3. Все вакансии группируются по ID компании и сохраняются в словаре `vacancies_data`.
+        4. Затем данные о компаниях и их вакансиях передаются в функцию `load_data_to_db`,
+        которая сохраняет их в базе данных.
 
-        Исключения:
-            В случае ошибок при запросах к API или работе с базой данных функция поднимет соответствующие исключения.
-        """
+    Исключения:
+        В случае ошибок при запросах к API или работе с базой данных функция поднимет соответствующие исключения.
+    """
     companies_url = "https://api.hh.ru/employers"
     vacancies_url = "https://api.hh.ru/vacancies"
 
@@ -56,19 +57,15 @@ def load_data_to_db(
     for company in companies_data:
         company_id = company["id"]
         company_name = company["name"]
-        db_manager.insert_company(company_id, company_name)
+        db_manager.insert_or_update_company(company_id, company_name)
 
     for company_id, vacancies in vacancies_data.items():
         for vacancy in vacancies:
-            title = vacancy.get("name", "")  # Используйте пустую строку по умолчанию
+            title = vacancy.get("name", "")
             salary_min = vacancy.get("salary", {}).get("from")
             salary_max = vacancy.get("salary", {}).get("to")
-            salary_currency = vacancy.get("salary", {}).get(
-                "currency", ""
-            )  # Используйте пустую строку по умолчанию
-            url = vacancy.get(
-                "alternate_url", ""
-            )  # Используйте пустую строку по умолчанию
+            salary_currency = vacancy.get("salary", {}).get("currency", "")
+            url = vacancy.get("alternate_url", "")
             db_manager.insert_vacancy(
                 company_id, title, salary_min, salary_max, salary_currency, url
             )
@@ -102,10 +99,11 @@ def get_db_config() -> dict:
     Получает параметры подключения к базе данных из файла config.ini
     :return: словарь с параметрами подключения
     """
+    # Получаем абсолютный путь к текущему файлу и строим путь к config.ini
+    config_path = os.path.join(os.path.dirname(__file__), "config.ini")
+
     config = configparser.ConfigParser()
-    config.read(
-        "/home/alex/new_pycharm_githab/Project_3_Search_vacancies_db_conn/config.ini"
-    )
+    config.read(config_path)
 
     db_config = {
         "dbname": config.get("database", "dbname"),
