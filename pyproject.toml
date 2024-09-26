@@ -13,6 +13,7 @@ psycopg2-binary = "^2.9.9"
 postgres = "^4.0"
 types-psycopg2 = "^2.9.21.20240819"
 types-requests = "^2.32.0.20240914"
+python-dotenv = "^1.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
